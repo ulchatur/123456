@@ -50,7 +50,7 @@ jobs:
               Add-Content $masterLog "$($startTime.ToString('yyyy-MM-dd HH:mm:ss')) $scriptName execution started"
 
               # *>&1 captures ALL PowerShell streams (stdout, stderr, warnings, verbose, debug)
-              # This ensures error messages also get written to the log file
+              # Tee-Object mirrors console output to individual script log file
               pwsh -File $script.FullName -LogFilePath $logFile *>&1 | Tee-Object -FilePath $logFile
 
               if ($LASTEXITCODE -ne 0) {
@@ -72,10 +72,29 @@ jobs:
               Write-Host "All scripts executed successfully."
           }
 
-      - name: Zip Logs
+      - name: Show Logs Directory
+        if: always()
         shell: pwsh
         run: |
+          Write-Host "=== Logs Directory Contents ==="
+          Get-ChildItem -Path logs | ForEach-Object {
+              Write-Host "$($_.Name) - $($_.Length) bytes"
+          }
+
+      - name: Zip Logs
+        if: always()
+        shell: pwsh
+        run: |
+          $logFiles = Get-ChildItem -Path logs -File
+          if ($logFiles.Count -eq 0) {
+              Write-Host "No log files found, creating placeholder..."
+              Add-Content "logs/no-logs.txt" "No logs were generated."
+          }
           Compress-Archive -Path logs\* -DestinationPath powershell-script-logs.zip -Force
+          Write-Host "Zip created: powershell-script-logs.zip"
+          Get-ChildItem -Path . -Filter "*.zip" | ForEach-Object {
+              Write-Host "Found zip: $($_.Name) - $($_.Length) bytes"
+          }
 
       - name: Upload Logs
         if: always()
