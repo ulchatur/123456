@@ -2,17 +2,16 @@ param (
     [string]$LogFilePath
 )
 
+$ErrorActionPreference = "Stop"
+
 . "$PSScriptRoot/common-logging.ps1"
+Initialize-Logger -LogFilePath $LogFilePath
 
-Start-Logging -LogFilePath $LogFilePath
+Write-StructuredLog "Script2 started"
+Write-StructuredLog "Performing sample calculation"
 
-Write-Host "Script2 started"
-Write-Host "Performing sample calculation"
+# Intentional error (raw error console me aayega)
+$test = 10 / 0
 
-# Force error
-Write-Host "Test calculation result: $(10 / 0)"
-
-Write-Host "Script2 completed successfully"
-
-
-Stop-Logging
+Write-StructuredLog "Result: $test"
+Write-StructuredLog "Script2 completed successfully"

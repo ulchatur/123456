@@ -26,12 +26,17 @@ jobs:
       - name: Run All PowerShell Scripts
         shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = "Continue"
 
           $scripts = Get-ChildItem -Path "scripts" -Filter "*.ps1" |
-                     Where-Object { $_.Name -ne "common-logging.ps1" }
+                    Where-Object { $_.Name -ne "common-logging.ps1" }
 
           $failed = $false
+          $masterLog = "logs/master.log"
+
+          if (Test-Path $masterLog) {
+              Remove-Item $masterLog -Force
+          }
 
           foreach ($script in $scripts) {
 
@@ -42,12 +47,20 @@ jobs:
               Write-Host "Running $scriptName"
               Write-Host "========================================"
 
-              try {
-                  pwsh $script.FullName -LogFilePath $logFile
-              }
-              catch {
-                  Write-Host "$scriptName failed"
+              $startTime = Get-Date
+              Add-Content $masterLog "$($startTime.ToString('yyyy-MM-dd HH:mm:ss')) $scriptName execution started"
+
+              # 🔥 THIS LINE MIRRORS CONSOLE TO FILE
+              pwsh $script.FullName -LogFilePath $logFile 2>&1 | Tee-Object -FilePath $logFile
+
+              if ($LASTEXITCODE -ne 0) {
                   $failed = $true
+                  $endTime = Get-Date
+                  Add-Content $masterLog "$($endTime.ToString('yyyy-MM-dd HH:mm:ss')) $scriptName FAILED"
+              }
+              else {
+                  $endTime = Get-Date
+                  Add-Content $masterLog "$($endTime.ToString('yyyy-MM-dd HH:mm:ss')) $scriptName SUCCESS"
               }
           }
 

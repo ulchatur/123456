@@ -2,23 +2,18 @@ param (
     [string]$LogFilePath
 )
 
+$ErrorActionPreference = "Stop"
+
 . "$PSScriptRoot/common-logging.ps1"
 Initialize-Logger -LogFilePath $LogFilePath
 
-Write-Log "Script1 started"
-Write-MasterLog "script1.ps1 execution started"
+Write-StructuredLog "Script1 started"
+Write-StructuredLog "Calling example API"
 
-try {
-    Write-Log "Calling example API"
+# API call
+$response = Invoke-WebRequest -Uri "https://example.com" -UseBasicParsing
 
-    $response = Invoke-WebRequest -Uri "https://example.com" -UseBasicParsing -ErrorAction Stop
-    Write-Log "StatusCode: $($response.StatusCode)"
+# Object explicitly print karo (taaki console dump aaye)
+$response
 
-    Write-Log "Script1 completed successfully"
-    Write-MasterLog "script1.ps1 SUCCESS"
-}
-catch {
-    Write-Log "Error: $($_.Exception.Message)" "ERROR"
-    Write-MasterLog "script1.ps1 FAILED"
-    exit 1
-}
+Write-StructuredLog "Script1 completed successfully"
