@@ -2,7 +2,7 @@ name: Scheduled PowerShell Scripts Runner
 
 on:
   # schedule:
-  #   - cron: "0 2 * * *"   # Daily at 2 AM UTC
+  #   - cron: "0 2 * * *"  # Daily at 2 AM UTC
   workflow_dispatch:
 
 concurrency:
@@ -28,7 +28,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Continue"
 
-          $scripts = Get-ChildItem -Path "scripts" -Filter "*.ps1" |
+          $scripts = Get-ChildItem -Path "scripts" -Filter "*.ps1" | `
                     Where-Object { $_.Name -ne "common-logging.ps1" }
 
           $failed = $false
@@ -39,7 +39,6 @@ jobs:
           }
 
           foreach ($script in $scripts) {
-
               $scriptName = $script.Name
               $logFile = "logs/$scriptName.log"
 
@@ -50,8 +49,9 @@ jobs:
               $startTime = Get-Date
               Add-Content $masterLog "$($startTime.ToString('yyyy-MM-dd HH:mm:ss')) $scriptName execution started"
 
-              # 🔥 THIS LINE MIRRORS CONSOLE TO FILE
-              pwsh $script.FullName -LogFilePath $logFile 2>&1 | Tee-Object -FilePath $logFile
+              # *>&1 captures ALL PowerShell streams (stdout, stderr, warnings, verbose, debug)
+              # This ensures error messages also get written to the log file
+              pwsh -File $script.FullName -LogFilePath $logFile *>&1 | Tee-Object -FilePath $logFile
 
               if ($LASTEXITCODE -ne 0) {
                   $failed = $true
@@ -71,7 +71,7 @@ jobs:
           else {
               Write-Host "All scripts executed successfully."
           }
-      
+
       - name: Zip Logs
         shell: pwsh
         run: |
