@@ -71,10 +71,15 @@ jobs:
           else {
               Write-Host "All scripts executed successfully."
           }
+      
+      - name: Zip Logs
+        shell: pwsh
+        run: |
+          Compress-Archive -Path logs\* -DestinationPath powershell-script-logs.zip -Force
 
       - name: Upload Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: powershell-script-logs
-          path: logs/
+          path: powershell-script-logs.zip
